@@ -1,5 +1,7 @@
 import cv2
 from ultralytics import YOLO
+import numpy as np
+from imutils.object_detection import non_max_suppression
 
 model = YOLO("yolov9c.pt")
 
@@ -15,10 +17,19 @@ def predict_and_detect(chosen_model, img, classes=[], conf=0.5, rectangle_thickn
     results = predict(chosen_model, img, classes, conf)
 
     for result in results:
+        new_boxes = []
         for box in result.boxes:
-            cv2.rectangle(img, (int(box.xyxy[0][0]), int(box.xyxy[0][1]), int(box.xyxy[0][2]), int(box.xyxy[0][3])), (255,0,0), rectangle_thickness)
-            cv2.putText(img, f"{result.names[int(box.cls[0])]}", (int(box.xyxy[0][0]), int(box.xyxy[0][1]) - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0), text_thickness)
+            x = int(box.xyxy[0][0])
+            y = int(box.xyxy[0][1])
+            w = int(box.xyxy[0][2])
+            h = int(box.xyxy[0][3])
+            new_boxes.append((x,y,w,h))
+        new_boxes = np.array(new_boxes)
 
+        pick = non_max_suppression(new_boxes, probs=None, overlapThresh=0.65)
+
+        for (xA,yA,xB,yB) in pick:
+            cv2.rectangle(img, (xA,yA), (xB,yB), (0,255,0), 2)
     return img, results
 
 image = cv2.imread("S:/Projects/pedestrianDetection/HaarCascade/Images/pedtest1.jpg")
